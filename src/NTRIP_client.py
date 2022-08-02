@@ -27,7 +27,9 @@ from pygnssutils.globals import (
     OUTPORT_NTRIP,
 )
 from pyrtcm import (RTCM_MSGIDS,RTCMParseError,RTCMMessageError,RTCMTypeError,)
-from pygnssutils import (GNSSNTRIPClient, GNSSReader, NMEA_PROTOCOL,UBX_PROTOCOL,RTCM3_PROTOCOL,protocol,)
+from pygnssutils import (GNSSNTRIPClient)
+from pyubx2 import (NMEA_PROTOCOL,UBX_PROTOCOL,RTCM3_PROTOCOL,protocol,)
+from pyubx2 import UBXReader as GNSSReader
 
 import rospy
 from sensor_msgs.msg import NavSatFix
