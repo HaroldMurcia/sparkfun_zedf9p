@@ -61,8 +61,9 @@ sudo chmod 666 /dev/ttyACM0
 * On [U-base M9 software](https://www.u-blox.com/en/product/u-center) config the following UBX-CFG-MSG:
   * 01-13 NAV-HPPSECEF [UART1 and USB]
   * 01-02 NAV-POSLLH [UART1 and USB]
-  * Change rate to 10 Hz using GAL Time
+  * Change rate to 20 Hz using GAL Time
   * in NAV5 change platform to Pedestrian
+  * To be complatible wit Quanergy in UBX-CF (config) change Main talker id from 0-System dependent to 1-GP (GPS)
 
 ### How to run?
 

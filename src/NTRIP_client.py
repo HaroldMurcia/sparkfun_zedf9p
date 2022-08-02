@@ -121,8 +121,8 @@ class GPS_ZED_F9P(object):
         self.ECEF_pub=rospy.Publisher('/zedf9p/ECEF_zedf9p', Odometry, queue_size=100)
         self.LLAccuracies_pub=rospy.Publisher('/zedf9p/LLAccuracies', nav_status, queue_size=100)
         self.ECEFAccuracies_pub=rospy.Publisher('/zedf9p/ECEFAccuracies', nav_status, queue_size=100)
-        self.GNGSA_pub=rospy.Publisher('/zedf9p/GNGSA', gngsa, queue_size=100)
-        self.GNRMC_pub=rospy.Publisher('/zedf9p/GNRMC', gnrmc, queue_size=100)
+        self.GNGSA_pub=rospy.Publisher('/zedf9p/GxGSA', gngsa, queue_size=100)
+        self.GNRMC_pub=rospy.Publisher('/zedf9p/GxRMC', gnrmc, queue_size=100)
         #
         self.TIMEOUT = 10
         self._socket = None
@@ -593,7 +593,7 @@ class GPS_ZED_F9P(object):
                                 self.gpsLLAccuracies.horizontal_acc = self.hAcc
                                 self.gpsLLAccuracies.vertical_acc = self.vAcc
                                 self.LLAccuracies_pub.publish(self.gpsLLAccuracies)
-                            if "GNGSA" in str(parsed_data):
+                            if "GNGSA" in str(parsed_data) or "GPGSA" in str(parsed_data):
                                 msg = str(parsed_data).split(",")
                                 opMode=msg[1]
                                 opMode=opMode.split("=")[1]
@@ -624,7 +624,7 @@ class GPS_ZED_F9P(object):
                                 self.gpsgngsa.hdop = HDOP
                                 self.gpsgngsa.vdop = VDOP
                                 self.GNGSA_pub.publish(self.gpsgngsa)
-                            if "GNRMC" in str(parsed_data):
+                            if "GNRMC" in str(parsed_data) or "GPRMC" in str(parsed_data) :
                                 msg = str(parsed_data).split(",")
                                 utc_time = msg[1]
                                 utc_time=utc_time.split("=")[1]
@@ -659,6 +659,8 @@ class GPS_ZED_F9P(object):
                                 self.gpsgnrmc.mode = GNRMC_mode
                                 #
                                 self.GNRMC_pub.publish(self.gpsgnrmc)
+                            if "GNZDA" in str(parsed_data) or "GPZDA" in str(parsed_data):
+                                pass
 
                     else:
                         print("Not parsed_data")
