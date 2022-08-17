@@ -678,11 +678,6 @@ class GPS_ZED_F9P(object):
                                 self.date_hours=float(utc_time.split(":")[0])
                                 self.date_minutes=float(utc_time.split(":")[1])
                                 self.date_seconds=float(utc_time.split(":")[2])
-                                UNIX_UT_secs=self.days_distance_jan1970+self.date_hours*60*60+self.date_minutes*60+self.date_seconds
-                                UNIX_timestamp_secs = int(UNIX_UT_secs)
-                                UNIX_timestamp_nsecs= int((UNIX_UT_secs-UNIX_timestamp_secs)*1e9)
-                                stamp_received.secs =UNIX_timestamp_secs
-                                stamp_received.nsecs=UNIX_timestamp_nsecs
                                 #
                                 GNRMC_status= msg[2]
                                 GNRMC_status=GNRMC_status.split("=")[1]
@@ -703,6 +698,13 @@ class GPS_ZED_F9P(object):
                                     self.days_distance_jan1970 = TODAY-GPS_INIT_DATE
                                     self.days_distance_jan1970 = self.days_distance_jan1970.total_seconds()
                                     rospy.loginfo("Ready for ROSBAG RECORD")
+                                #
+                                UNIX_UT_secs=self.days_distance_jan1970+self.date_hours*60*60+self.date_minutes*60+self.date_seconds
+                                UNIX_timestamp_secs = int(UNIX_UT_secs)
+                                UNIX_timestamp_nsecs= int((UNIX_UT_secs-UNIX_timestamp_secs)*1e9)
+                                stamp_received.secs =UNIX_timestamp_secs
+                                stamp_received.nsecs=UNIX_timestamp_nsecs
+                                #
                                 GNRMC_mode= msg[12]
                                 GNRMC_mode=GNRMC_mode.split("=")[1]
                                 if (GNRMC_mode=="A"):
@@ -722,11 +724,10 @@ class GPS_ZED_F9P(object):
                                 self.gpsgnrmc.header.frame_id="ublox"
                                 self.gpsgnrmc.utc_time = utc_time
                                 self.gpsgnrmc.status = GNRMC_status
-                                self.gpsgnrmc.utc_date = GNRMC_date
+                                self.gpsgnrmc.utc_date = str(GNRMC_date)
                                 self.gpsgnrmc.mode = GNRMC_mode
                                 #
-                                if self.FLAG_determine_date==True:
-                                    self.GNRMC_pub.publish(self.gpsgnrmc)
+                                self.GNRMC_pub.publish(self.gpsgnrmc)
                             if "GNZDA" in str(parsed_data) or "GPZDA" in str(parsed_data):
                                 pass
 
