@@ -4,6 +4,7 @@ from sys import platform
 import sys
 import os
 import socket
+from datetime import date
 from io import BufferedReader
 from threading import Thread, Lock, Event
 from queue import Queue
@@ -82,6 +83,14 @@ class GPS_ZED_F9P(object):
         self.serial_lock = Lock()
         self.serial=0
         self.serialTIMEOUT=0
+        self.FLAG_determine_date=False
+        self.date_year=0
+        self.date_month=0
+        self.date_day=0
+        self.date_hours=0
+        self.date_minutes=0
+        self.date_seconds=0
+        self.days_distance_jan1970=0
         # NTRIP server parameters - AMEND AS REQUIRED:
         # Ideally, self.MOUNTPOINT should be <30 km from location.
         # persist settings to allow any calling app to retrieve them
@@ -100,6 +109,7 @@ class GPS_ZED_F9P(object):
             "reflon": "",
             "refalt": "",
             "refsep": "",
+            "debug": "",
         }
         try:
             self._verbosity = int(kwargs.get("verbosity", VERBOSITY_MEDIUM))
@@ -449,9 +459,6 @@ class GPS_ZED_F9P(object):
             self.rth_thread= None
 
 
-
-
-
     def _start_writeZEDF9P_thread(self):
         """
         Start send thread.
@@ -459,6 +466,17 @@ class GPS_ZED_F9P(object):
         self.kth_thread = Thread(target=self.send_gnss,args=(),daemon=True,)
         self.kth_thread.start()
 
+
+    def _app_update_status(self, status: bool, msg: tuple = None):
+        """
+        THREADED
+        Update NTRIP connection status in calling application.
+        :param bool status: NTRIP server connection status
+        :param tuple msg: optional (message, color)
+        """
+
+        if hasattr(self.__app, "update_ntrip_status"):
+            self.__app.update_ntrip_status(status, msg)
 
     def _read_thread(self,settings: dict,stopevent: Event,output: object,):
         """
@@ -522,9 +540,20 @@ class GPS_ZED_F9P(object):
                     stamp_received = rospy.get_rostime()
                     if parsed_data:
                         ### NEW LAW Harold
-                        if self.RTCM_1005_FLAG == True:
+                        if self.RTCM_1005_FLAG == True or self._settings["debug"] == "True":
                             if "UBX(NAV-HPPOSECEF" in str(parsed_data):
                                 msg = str(parsed_data).split(",")
+                                ITOW = msg[3]
+                                ITOW = ITOW.split("=")[1]
+                                self.date_hours=float(ITOW.split(":")[0])
+                                self.date_minutes=float(ITOW.split(":")[1])
+                                self.date_seconds=float(ITOW.split(":")[2])
+                                UNIX_UT_secs=self.days_distance_jan1970+self.date_hours*60*60+self.date_minutes*60+self.date_seconds
+                                UNIX_timestamp_secs = int(UNIX_UT_secs)
+                                UNIX_timestamp_nsecs= int((UNIX_UT_secs-UNIX_timestamp_secs)*1e9)
+                                stamp_received.secs =UNIX_timestamp_secs
+                                stamp_received.nsecs=UNIX_timestamp_nsecs
+                                #
                                 ecefX = msg[4]
                                 ecefX = ecefX.split("=")
                                 ecefX = float(ecefX[1])
@@ -555,6 +584,17 @@ class GPS_ZED_F9P(object):
                                 #print("\nECEF: ", self.ROVER_ECEF_X,self.ROVER_ECEF_Y,self.ROVER_ECEF_Z,self.pAcc)
                             if "UBX(NAV-POSLLH," in str(parsed_data):
                                 msg = str(parsed_data).split(",")
+                                ITOW = msg[1]
+                                ITOW = ITOW.split("=")[1]
+                                self.date_hours=float(ITOW.split(":")[0])
+                                self.date_minutes=float(ITOW.split(":")[1])
+                                self.date_seconds=float(ITOW.split(":")[2])
+                                UNIX_UT_secs=self.days_distance_jan1970+self.date_hours*60*60+self.date_minutes*60+self.date_seconds
+                                UNIX_timestamp_secs = int(UNIX_UT_secs)
+                                UNIX_timestamp_nsecs= int((UNIX_UT_secs-UNIX_timestamp_secs)*1e9)
+                                stamp_received.secs =UNIX_timestamp_secs
+                                stamp_received.nsecs=UNIX_timestamp_nsecs
+                                #
                                 longitude = msg[2]
                                 longitude = longitude.split("=")
                                 longitude = float(longitude[1])
@@ -629,7 +669,16 @@ class GPS_ZED_F9P(object):
                             if "GNRMC" in str(parsed_data) or "GPRMC" in str(parsed_data) :
                                 msg = str(parsed_data).split(",")
                                 utc_time = msg[1]
-                                utc_time=utc_time.split("=")[1]
+                                utc_time = utc_time.split("=")[1]
+                                self.date_hours=float(utc_time.split(":")[0])
+                                self.date_minutes=float(utc_time.split(":")[1])
+                                self.date_seconds=float(utc_time.split(":")[2])
+                                UNIX_UT_secs=self.days_distance_jan1970+self.date_hours*60*60+self.date_minutes*60+self.date_seconds
+                                UNIX_timestamp_secs = int(UNIX_UT_secs)
+                                UNIX_timestamp_nsecs= int((UNIX_UT_secs-UNIX_timestamp_secs)*1e9)
+                                stamp_received.secs =UNIX_timestamp_secs
+                                stamp_received.nsecs=UNIX_timestamp_nsecs
+                                #
                                 GNRMC_status= msg[2]
                                 GNRMC_status=GNRMC_status.split("=")[1]
                                 if (GNRMC_status=="A"):
@@ -638,6 +687,16 @@ class GPS_ZED_F9P(object):
                                     GNRMC_status="invalid positioning"
                                 GNRMC_date= msg[9]
                                 GNRMC_date=GNRMC_date.split("=")[1]
+                                GNRMC_date=GNRMC_date.split("-")
+                                if self.FLAG_determine_date==False:
+                                    self.FLAG_determine_date = True
+                                    self.date_year=int(GNRMC_date[0])
+                                    self.date_month=int(GNRMC_date[1])
+                                    self.date_day=int(GNRMC_date[2])
+                                    GPS_INIT_DATE = date(1970, 1, 1)
+                                    TODAY = date(self.date_year,  self.date_month, self.date_day)
+                                    self.days_distance_jan1970 = TODAY-GPS_INIT_DATE
+                                    self.days_distance_jan1970 = self.days_distance_jan1970.total_seconds()
                                 GNRMC_mode= msg[12]
                                 GNRMC_mode=GNRMC_mode.split("=")[1]
                                 if (GNRMC_mode=="A"):
@@ -713,6 +772,7 @@ class GPS_ZED_F9P(object):
             self._settings["reflon"] = kwargs.get("reflon", "")
             self._settings["refalt"] = kwargs.get("refalt", "")
             self._settings["refsep"] = kwargs.get("refsep", "")
+            self._settings["debug"] = kwargs.get("debug", "")
             #output = kwargs.get("output", None)
             if server == "":
                 raise ParameterError(f"Invalid server url {server}")
