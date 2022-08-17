@@ -580,7 +580,7 @@ class GPS_ZED_F9P(object):
                                 self.gpsECEFAccuracies.header.stamp = stamp_received
                                 self.gpsECEFAccuracies.header.frame_id="ublox"
                                 self.gpsECEFAccuracies.position_acc = self.pAcc
-                                self.ECEFAccuracies_pub.publish(self.gpsECEFAccuracies)                            
+                                self.ECEFAccuracies_pub.publish(self.gpsECEFAccuracies)
                                 #print("\nECEF: ", self.ROVER_ECEF_X,self.ROVER_ECEF_Y,self.ROVER_ECEF_Z,self.pAcc)
                             if "UBX(NAV-POSLLH," in str(parsed_data):
                                 msg = str(parsed_data).split(",")
@@ -772,7 +772,7 @@ class GPS_ZED_F9P(object):
             self._settings["reflon"] = kwargs.get("reflon", "")
             self._settings["refalt"] = kwargs.get("refalt", "")
             self._settings["refsep"] = kwargs.get("refsep", "")
-            self._settings["debug"] = kwargs.get("debug", "")
+            self._settings["debug"] = kwargs.get("debug", "False")
             #output = kwargs.get("output", None)
             if server == "":
                 raise ParameterError(f"Invalid server url {server}")
