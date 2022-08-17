@@ -1,0 +1,8 @@
+prefix=/home/hmurcia/github/sparkfun_zedf9p/cmake-build-debug/devel
+
+Name: sparkfun_zedf9p
+Description: Description of sparkfun_zedf9p
+Version: 0.0.0
+Cflags: -I/home/hmurcia/github/sparkfun_zedf9p/cmake-build-debug/devel/include
+Libs: -L${prefix}/lib 
+Requires: 

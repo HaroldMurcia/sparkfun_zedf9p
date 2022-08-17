@@ -575,12 +575,14 @@ class GPS_ZED_F9P(object):
                                 self.gpsECEF.pose.pose.position.x=self.ROVER_ECEF_X
                                 self.gpsECEF.pose.pose.position.y=self.ROVER_ECEF_Y
                                 self.gpsECEF.pose.pose.position.z=self.ROVER_ECEF_Z
-                                self.ECEF_pub.publish(self.gpsECEF)
+                                if self.FLAG_determine_date==True:
+                                    self.ECEF_pub.publish(self.gpsECEF)
                                 #
                                 self.gpsECEFAccuracies.header.stamp = stamp_received
                                 self.gpsECEFAccuracies.header.frame_id="ublox"
                                 self.gpsECEFAccuracies.position_acc = self.pAcc
-                                self.ECEFAccuracies_pub.publish(self.gpsECEFAccuracies)
+                                if self.FLAG_determine_date==True:
+                                    self.ECEFAccuracies_pub.publish(self.gpsECEFAccuracies)
                                 #print("\nECEF: ", self.ROVER_ECEF_X,self.ROVER_ECEF_Y,self.ROVER_ECEF_Z,self.pAcc)
                             if "UBX(NAV-POSLLH," in str(parsed_data):
                                 msg = str(parsed_data).split(",")
@@ -628,13 +630,15 @@ class GPS_ZED_F9P(object):
                                 self.gpsmsg.altitude=self.ROVER_ALT
                                 self.gpsmsg.header.stamp = stamp_received
                                 self.gpsmsg.header.frame_id="ublox"
-                                self.LLA_pub.publish(self.gpsmsg)
+                                if self.FLAG_determine_date==True:
+                                    self.LLA_pub.publish(self.gpsmsg)
                                 #
                                 self.gpsLLAccuracies.header.stamp = stamp_received
                                 self.gpsLLAccuracies.header.frame_id="ublox"
                                 self.gpsLLAccuracies.horizontal_acc = self.hAcc
                                 self.gpsLLAccuracies.vertical_acc = self.vAcc
-                                self.LLAccuracies_pub.publish(self.gpsLLAccuracies)
+                                if self.FLAG_determine_date==True:
+                                    self.LLAccuracies_pub.publish(self.gpsLLAccuracies)
                             if "GNGSA" in str(parsed_data) or "GPGSA" in str(parsed_data):
                                 msg = str(parsed_data).split(",")
                                 opMode=msg[1]
@@ -665,7 +669,8 @@ class GPS_ZED_F9P(object):
                                 self.gpsgngsa.pdop = PDOP
                                 self.gpsgngsa.hdop = HDOP
                                 self.gpsgngsa.vdop = VDOP
-                                self.GNGSA_pub.publish(self.gpsgngsa)
+                                if self.FLAG_determine_date==True:
+                                    self.GNGSA_pub.publish(self.gpsgngsa)
                             if "GNRMC" in str(parsed_data) or "GPRMC" in str(parsed_data) :
                                 msg = str(parsed_data).split(",")
                                 utc_time = msg[1]
@@ -694,9 +699,9 @@ class GPS_ZED_F9P(object):
                                     self.date_month=int(GNRMC_date[1])
                                     self.date_day=int(GNRMC_date[2])
                                     GPS_INIT_DATE = date(1970, 1, 1)
-                                    TODAY = date(self.date_year,  self.date_month, self.date_day)
                                     self.days_distance_jan1970 = TODAY-GPS_INIT_DATE
                                     self.days_distance_jan1970 = self.days_distance_jan1970.total_seconds()
+                                    rospy.loginfo("Ready for ROSBAG RECORD")
                                 GNRMC_mode= msg[12]
                                 GNRMC_mode=GNRMC_mode.split("=")[1]
                                 if (GNRMC_mode=="A"):
@@ -719,7 +724,8 @@ class GPS_ZED_F9P(object):
                                 self.gpsgnrmc.utc_date = GNRMC_date
                                 self.gpsgnrmc.mode = GNRMC_mode
                                 #
-                                self.GNRMC_pub.publish(self.gpsgnrmc)
+                                if self.FLAG_determine_date==True:
+                                    self.GNRMC_pub.publish(self.gpsgnrmc)
                             if "GNZDA" in str(parsed_data) or "GPZDA" in str(parsed_data):
                                 pass
 

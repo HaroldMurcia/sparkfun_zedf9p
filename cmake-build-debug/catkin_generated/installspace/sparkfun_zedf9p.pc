@@ -1,0 +1,8 @@
+prefix=/usr/local
+
+Name: sparkfun_zedf9p
+Description: Description of sparkfun_zedf9p
+Version: 0.0.0
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib 
+Requires: 
