@@ -699,6 +699,7 @@ class GPS_ZED_F9P(object):
                                     self.date_month=int(GNRMC_date[1])
                                     self.date_day=int(GNRMC_date[2])
                                     GPS_INIT_DATE = date(1970, 1, 1)
+                                    TODAY = date(self.date_year,  self.date_month, self.date_day)
                                     self.days_distance_jan1970 = TODAY-GPS_INIT_DATE
                                     self.days_distance_jan1970 = self.days_distance_jan1970.total_seconds()
                                     rospy.loginfo("Ready for ROSBAG RECORD")
