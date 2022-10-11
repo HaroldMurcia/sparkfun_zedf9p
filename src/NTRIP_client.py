@@ -38,6 +38,7 @@ from nav_msgs.msg import Odometry
 from sparkfun_zedf9p.msg import nav_status
 from sparkfun_zedf9p.msg import gngsa
 from sparkfun_zedf9p.msg import gnrmc
+from std_msgs.msg import String
 
 ###### GLOBAL VARIABLES
 USERAGENT = f"PYGNSSUTILS NTRIP Client/{VERSION}"
@@ -135,6 +136,7 @@ class GPS_ZED_F9P(object):
         self.ECEFAccuracies_pub=rospy.Publisher('/zedf9p/ECEFAccuracies', nav_status, queue_size=100)
         self.GNGSA_pub=rospy.Publisher('/zedf9p/GxGSA', gngsa, queue_size=100)
         self.GNRMC_pub=rospy.Publisher('/zedf9p/GxRMC', gnrmc, queue_size=100)
+        self.RTCM_pub =rospy.Publisher('/zedf9p/RTCM_time',String,queue_size=100)
         #
         self.TIMEOUT = 10
         self._socket = None
@@ -575,14 +577,12 @@ class GPS_ZED_F9P(object):
                                 self.gpsECEF.pose.pose.position.x=self.ROVER_ECEF_X
                                 self.gpsECEF.pose.pose.position.y=self.ROVER_ECEF_Y
                                 self.gpsECEF.pose.pose.position.z=self.ROVER_ECEF_Z
-                                if self.FLAG_determine_date==True:
-                                    self.ECEF_pub.publish(self.gpsECEF)
+                                self.ECEF_pub.publish(self.gpsECEF)
                                 #
                                 self.gpsECEFAccuracies.header.stamp = stamp_received
                                 self.gpsECEFAccuracies.header.frame_id="ublox"
                                 self.gpsECEFAccuracies.position_acc = self.pAcc
-                                if self.FLAG_determine_date==True:
-                                    self.ECEFAccuracies_pub.publish(self.gpsECEFAccuracies)
+                                self.ECEFAccuracies_pub.publish(self.gpsECEFAccuracies)
                                 #print("\nECEF: ", self.ROVER_ECEF_X,self.ROVER_ECEF_Y,self.ROVER_ECEF_Z,self.pAcc)
                             if "UBX(NAV-POSLLH," in str(parsed_data):
                                 msg = str(parsed_data).split(",")
@@ -630,15 +630,13 @@ class GPS_ZED_F9P(object):
                                 self.gpsmsg.altitude=self.ROVER_ALT
                                 self.gpsmsg.header.stamp = stamp_received
                                 self.gpsmsg.header.frame_id="ublox"
-                                if self.FLAG_determine_date==True:
-                                    self.LLA_pub.publish(self.gpsmsg)
+                                self.LLA_pub.publish(self.gpsmsg)
                                 #
                                 self.gpsLLAccuracies.header.stamp = stamp_received
                                 self.gpsLLAccuracies.header.frame_id="ublox"
                                 self.gpsLLAccuracies.horizontal_acc = self.hAcc
                                 self.gpsLLAccuracies.vertical_acc = self.vAcc
-                                if self.FLAG_determine_date==True:
-                                    self.LLAccuracies_pub.publish(self.gpsLLAccuracies)
+                                self.LLAccuracies_pub.publish(self.gpsLLAccuracies)
                             if "GNGSA" in str(parsed_data) or "GPGSA" in str(parsed_data):
                                 msg = str(parsed_data).split(",")
                                 opMode=msg[1]
@@ -669,8 +667,7 @@ class GPS_ZED_F9P(object):
                                 self.gpsgngsa.pdop = PDOP
                                 self.gpsgngsa.hdop = HDOP
                                 self.gpsgngsa.vdop = VDOP
-                                if self.FLAG_determine_date==True:
-                                    self.GNGSA_pub.publish(self.gpsgngsa)
+                                self.GNGSA_pub.publish(self.gpsgngsa)
                             if "GNRMC" in str(parsed_data) or "GPRMC" in str(parsed_data) :
                                 msg = str(parsed_data).split(",")
                                 utc_time = msg[1]
@@ -746,6 +743,8 @@ class GPS_ZED_F9P(object):
             try:
                 raw_data, parsed_data = self.ntrip_queue.get()
                 if protocol(raw_data) == RTCM3_PROTOCOL:
+                    time_rtcm = rospy.get_rostime()
+                    self.RTCM_pub.publish(str(time_rtcm))
                     #
                     if "RTCM(1005" in str(parsed_data) and self.RTCM_1005_FLAG==False:
                         self.RTCM_1005_FLAG=True
@@ -763,7 +762,6 @@ class GPS_ZED_F9P(object):
             except Exception as err:
                 print(f"Something went wrong in send thread {err}")
                 break
-        
 
     def run(self, **kwargs) -> bool:
         try:
@@ -793,7 +791,6 @@ class GPS_ZED_F9P(object):
                 + "Type gnssntripclient -h for help.",
                 VERBOSITY_LOW,)
             self._validargs = False
-        
         if self._validargs:
             self._connected = True
             #
@@ -812,8 +809,7 @@ class GPS_ZED_F9P(object):
                     self._start_readZEDF9P_thread() 
 
                     print("Sending corrections to ZED-F9P")
-                    self._start_writeZEDF9P_thread()
-                    
+                    self._start_writeZEDF9P_thread()                    
                     while not rospy.is_shutdown():  # run until user presses CTRL-C
                         pass
         return True 
